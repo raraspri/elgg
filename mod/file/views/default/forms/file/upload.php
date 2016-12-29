@@ -5,6 +5,31 @@
  *
  * @package ElggFile
  */
+//---------------------------------------------
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+include_once(elgg_get_plugins_path() . 'file/lib/qr-decoder/QrReader.php');
+
+
+$dir = scandir('/home/sevara/Desktop/qr');
+$ignoredFiles = array(
+	'.',
+	'..',
+	'.DS_Store'
+);
+foreach($dir as $file) {
+    if(in_array($file, $ignoredFiles)) continue;
+
+    print $file;
+    print ' --- ';
+    $qrcode = new QrReader('/home/sevara/Desktop/qr/'.$file);
+    print $text = $qrcode->text();
+    print "<br/>";
+}
+exit;
+//-----------------------------------------------
+
 // once elgg_view stops throwing all sorts of junk into $vars, we can use 
 $title = elgg_extract('title', $vars, '');
 $desc = elgg_extract('description', $vars, '');
