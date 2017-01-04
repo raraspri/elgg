@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Elgg file upload/save form
  *
@@ -41,8 +40,9 @@ $fields = [
 		'help' => $upload_limit,
 		'value' => ($guid),
 		'required' => (!$guid),
+		'id' => 'inputUploadTicket'
 	],
-	[
+	/*[
 		'type' => 'text',
 		'name' => 'title',
 		'value' => $title,
@@ -71,7 +71,7 @@ $fields = [
 		'entity_type' => 'object',
 		'entity_subtype' => 'file',
 		'label' => elgg_echo('access'),
-	],
+	],*/
 	[
 		'type' => 'hidden',
 		'name' => 'container_guid',
@@ -85,7 +85,8 @@ $fields = [
 	[
 		'type' => 'submit',
 		'value' => $submit_label,
-		'field_class' => 'elgg-foot',
+		'field_class' => 'elgg-foot submitTicket',
+		'id' => 'submitUploadTicket'
 	]
 ];
 
