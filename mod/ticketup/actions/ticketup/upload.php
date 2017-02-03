@@ -144,17 +144,26 @@ include_once(elgg_get_plugins_path() . 'ticketup/lib/qr-decoder/QrReader.php');
 $qrcode = new QrReader($file->getFilenameOnFilestore());
 $qrText = $qrcode->text();
 
-//$qrText = "Mercadona | 2016/12/29 | Leche | 2 | 1.2 | Pan | 3 | 1";
+//$qrText = "Mercadona : 2016/12/29 : Leche : 2 : 1.2 : Pan : 3 : 1";
 
 $arr_info = explode(":", $qrText);
 
 $shop = trim($arr_info[0]);
 $date = trim($arr_info[1]);
+$date = strtotime($date);
+
 
 //Se elimina la tienda y la fecha, ademas de reindexar el array
 unset($arr_info[0]);
 unset($arr_info[1]);
 $arr_info = array_values($arr_info);	
+
+//Se crea el objeto ElggTicketup y se les da valores a sus atributos
+$ticketup = new ElggTicketup();
+$ticketup->setShop($shop);
+$ticketup->setDate($date);
+$ticketup->setPhoto($file->guid);
+$ticketup->save();
 
 $products = array();
 for ($i=0; $i < count($arr_info); $i+=3) { 
@@ -162,17 +171,15 @@ for ($i=0; $i < count($arr_info); $i+=3) {
 	$product->setName(trim($arr_info[$i]));
 	$product->setQuantity(trim($arr_info[$i+1]));
 	$product->setPrice(trim($arr_info[$i+2]));
+	$product->setIdTicket($ticketup->getGUID());
 	$product->save();
 	$products[] = $product;
 }
 
-//Se crea el objeto ElggTicketup y se les da valores a sus atributos
-$ticketup = new ElggTicketup();
-$ticketup->setShop($shop);
-$ticketup->setDate($date);
+//Se actualiza el ticket para añadirle los productos
 $ticketup->setProducts($products);
-$ticketup->setPhoto($file->guid);
 $ticketup->save();
+
 
 //-----------------------------------------------
 

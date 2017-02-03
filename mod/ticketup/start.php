@@ -59,6 +59,25 @@ function ticketup_init() {
 	elgg_unregister_menu_item('site','file');
 	elgg_unregister_menu_item('site','activity');
 	elgg_unregister_page_handler('file');
+
+	if(elgg_is_active_plugin('web_services')){
+		// Test get info shop 
+		elgg_ws_expose_function(
+			"getInfoTicket",
+			"get_info_ticket",
+			array(
+				'cod_ticket' => array ('type' => 'string')
+			),
+			elgg_echo('ticketp:webservice'),
+			'GET',
+			false,
+			false
+		);
+	}
+}
+
+function get_info_ticket(){
+	return "MERCADONA:2016/03/21:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:LECHE:3:10.25:";
 }
 
 /**
@@ -79,6 +98,10 @@ function ticketup_page_handler($page){
 			echo elgg_view_resource('ticketup/view', [
 				'guid' => $page[1],
 			]);
+			break;
+		case 'alg':
+			$rep = obtenerRepeticiones('LECHE');
+			algorithms($rep);
 			break;
 	}
 }
@@ -120,4 +143,135 @@ function elgg_require_css($view) {
 function elgg_unrequire_css($view) {
     $key = "elgg_require_css:$view";
     elgg_unregister_css($key);
+}
+
+function obtenerRepeticiones($product){
+	//Se obtienen todos los productos con el nombre $product
+	$products = elgg_get_entities_from_metadata(array(
+		'types' => 'object',
+		'subtypes' => 'product',
+		'metadata_name' => 'name',
+		'metadata_value' => $product,
+		'limit' => false,
+	));
+
+	echo "<pre>";
+
+	//Se obtienen las fechas de cada producto
+	$fechas = array();
+	foreach ($products as $obj) {
+
+		$idticket = $obj->getIdTicket();
+		$ticket = new ElggTicketup($idticket);
+
+		if($ticket instanceof ElggTicketup){
+			$fechas[] = $ticket->getDate();
+		}
+	}
+	
+	//Se ordenan las fechas de menor a mayor
+	sort($fechas);
+
+	//Se obtienen los intervalos entre las fechas
+	$intervalos = array();
+	for ($i=0; $i < count($fechas)-1; $i++) { 
+		$intervalos[] = ($fechas[$i+1]-$fechas[$i])/86400;
+	}
+
+	//var_dump($intervalos);
+	var_dump(algorithms($intervalos));
+	exit;
+}
+
+/**
+ * [algorithms description]
+ * @param  [type] $buy_int [description]
+ * @return [type]          [description]
+ */
+function algorithms($buy_int){
+	ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+	// From DB-----
+	$user_tickets=5;
+	$product='LECHE';
+	//$buy_int = array(3, 5, 5, 4, 3, 2, 3, 3, 4, 4, 7, 7, 7, 8);// purchase interval (in days).
+
+	//$buy_f=fopen('distribution.txt', 'r');
+	//$buy_int=array_map('intval', explode(",", fread($buy_f, filesize('distribution.txt'))));
+
+	//-------
+	$times_bought=count($buy_int);
+	// Params -------
+	$gauss_int=20;
+	$min_tickets=3;
+	$min_product=3;
+	$D_rep=1;
+	//--------
+
+	if ($user_tickets<$min_tickets or $times_bought<$min_product) {
+		exit('Not enough data');
+	}
+
+	$distr = array_count_values($buy_int); 
+	$distr[0]=0;
+	$distr[max(array_keys($distr))+3]=0;
+	ksort($distr);
+
+	$x0=0;
+	$y0=0;
+	$sign=0;
+
+	foreach ($distr as $x => $y) {
+		if ($sign!==sign($y-$y0) and sign($y-$y0)==1) {
+			$mode_day[]=$x;
+			$mode_rep[]=$y;
+		}
+		$sign=sign($y-$y0);
+		$y0=$y;
+		$x0=$x;
+	}
+
+	
+	$y_max=max($mode_rep);
+
+	foreach ($mode_rep as $x => $y) {
+
+		if ($y<$y_max-$D_rep) {
+
+			unset($mode_day[$x]);
+			unset($mode_rep[$x]);
+			continue;
+		}
+	}
+
+
+	/*
+	|----------------------------------------------------------|
+	|EMPEZAR CON ESTO SI SE DECIDE EVALUAR                     |
+	|EL COMPORTAMIENTO DE COMPRA CUANDO HAY MÁS DE UN PICO     |
+	|----------------------------------------------------------|
+
+	if (count($mode_day)>1) {
+		function filt($value)
+		{
+			global $mode_day;
+			return(in_array($value, $mode_day));
+		}
+
+		$seq=array_filter($buy_int, 'filt');
+
+
+	} elseif (count($mode_day)==1) {
+		$next_day=$mode_day[0];
+	}
+	*/
+
+	$next_day=min($mode_day);
+
+	return $next_day;
+}
+
+function sign($n) {     
+	return ($n > 0) - ($n < 0); 
 }

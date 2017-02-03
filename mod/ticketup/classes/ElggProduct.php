@@ -101,4 +101,29 @@ class ElggProduct extends ElggObject {
 
         return $this;
     }
+
+
+    /**
+     * Gets the IdTicket
+     *
+     * @return int
+     */
+    public function getIdTicket()
+    {
+        return $this->IdTicket;
+    }
+
+    /**
+     * Sets the IdTicket
+     *
+     * @param int $IdTicket the IdTicket
+     *
+     * @return self
+     */
+    public function setIdTicket($IdTicket)
+    {
+        $this->IdTicket = $IdTicket;
+
+        return $this;
+    }
 }
